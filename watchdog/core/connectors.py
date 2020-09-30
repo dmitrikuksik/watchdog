@@ -34,4 +34,9 @@ class DynamoDbConnector:
         response = self.table.get_item(
             Key=key
         )
-        return response['Item']
+        return response.get('Item')
+
+    def put_item(self, data: dict):
+        self.table.put_item(
+            Item=data
+        )
