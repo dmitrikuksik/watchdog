@@ -9,6 +9,10 @@ class ExitCode(Enum):
     NONZERO = 3
 
 
+class CommandException(Exception):
+    pass
+
+
 class Command:
     """
     Class represents interface for executing shell commands.
@@ -21,11 +25,19 @@ class Command:
         return self.exec(*args)
 
     def exec(self, *args) -> int:
-        with open(os.devnull, 'wb') as out:
-            code = subprocess.call(
-                args, stdout=out, stderr=out
+        try:
+            with open(os.devnull, 'wb') as out:
+                code = subprocess.call(
+                    args, stdout=out, stderr=out
+                )
+                return code
+        except FileNotFoundError as err:
+            raise CommandException(
+                'Failed to execute command: {}.\n{}'.format(
+                    ' '.join(args),
+                    err
+                )
             )
-            return code
 
 
 class Service:

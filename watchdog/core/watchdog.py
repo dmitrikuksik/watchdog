@@ -3,9 +3,12 @@ import time
 import logging
 
 from typing import Optional, List, Dict
-from watchdog.core.service import Service
+from watchdog.core.connectors import SnsConnector
+from watchdog.core.service import (
+    Service, CommandException
+)
 
-logger = logging.getLogger('watchdog')
+logger = logging.getLogger(__name__)
 
 WATHDOG_RELOAD = 15*60
 
@@ -18,29 +21,42 @@ class WatchdogContext:
 
     def __init__(
         self,
-        listofservices: List,
-        numofseccheck: int,
-        numofsecwait: int,
-        numofattempts: int
+        list_of_services: List[str],
+        num_of_sec_check: int,
+        num_of_sec_wait: int,
+        num_of_attempts: int
     ):
-        self.services = [Service(s) for s in listofservices]
-        self.numofseccheck = numofseccheck
-        self.numofsecwait = numofsecwait
-        self.numofattempts = numofattempts
+        self.services = [
+            Service(s) for s in list_of_services
+        ]
+
+        if (
+            num_of_sec_check < 0 or
+            num_of_sec_wait < 0 or
+            num_of_attempts < 0
+        ):
+            raise WatchdogException(
+                'Invalid watchdog settings. '
+                'Values can\'t be negative.'
+            )
+
+        self.num_of_sec_check = num_of_sec_check
+        self.num_of_sec_wait = num_of_sec_wait
+        self.num_of_attempts = num_of_attempts
 
     @classmethod
     def from_dict(cls, data: Dict) -> 'WatchdogContext':
         return cls(
-            listofservices=data.get(
+            list_of_services=data.get(
                 'ListOfServices'
             ),
-            numofseccheck=int(
+            num_of_sec_check=int(
                 data.get('NumOfSecCheck')
             ),
-            numofsecwait=int(
+            num_of_sec_wait=int(
                 data.get('NumOfSecWait')
             ),
-            numofattempts=int(
+            num_of_attempts=int(
                 data.get('NumOfAttempts')
             )
         )
@@ -54,41 +70,49 @@ class Watchdog:
 
     def __init__(
         self,
+        sns_connector: SnsConnector,
         reload_after: int = WATHDOG_RELOAD,
         context: Optional[WatchdogContext] = None
     ):
+        self.sns_connector = sns_connector
         self.reload_after = reload_after
         self.context = context
 
     def setup(self, context: WatchdogContext):
         self.context = context
 
+    def propogate(self, msg):
+        logger.info(msg)
+        self.sns_connector.publish(msg)
+
     async def check(self, service: Service):
-        logger.info(f'Checking {service}...')
+        logger.info(f'({service}): checking...')
 
         if service.ping():
-            logger.info(f'Service {service} is up.')
+            logger.info(f'({service}): service is up')
             return
 
-        for i in range(self.context.numofattempts):
+        self.propogate(f'({service}): service is down')
+
+        for i in range(self.context.num_of_attempts):
             logger.info(
-                f'#{i+1}: Attempt to start service {service}.'
+                f'({service}): attempt to start service ({i+1})'
             )
 
             service.start()
             if service.ping():
-                logger.info(
-                    f'Service {service} is up after {i+1} attempts.'
+                self.propogate(
+                    f'({service}): service is up after {i+1} attempt(s)'
                 )
                 return
 
             await asyncio.sleep(
-                self.context.numofsecwait
+                self.context.num_of_sec_wait
             )
 
-        logger.info(
-            f'Failed to start {service} after '
-            f'{self.context.numofattempts} attempts.'
+        self.propogate(
+            f'({service}): failed to start after '
+            f'{self.context.num_of_attempts} attempt(s)'
         )
 
     def create_service_pool(self):
@@ -103,12 +127,9 @@ class Watchdog:
 
     async def watch(self):
         if not self.context:
-            logger.error(
-                'Watchdog is not configured. '
-                'Please, use setup() to set context.'
-            )
             raise WatchdogException(
-                'Watchdog is not configured.'
+                'Watchdog is not configured. Please, '
+                'use setup() to set watchdog settings.'
             )
 
         tick = time.time()
@@ -117,10 +138,13 @@ class Watchdog:
             if tock >= self.reload_after:
                 break
 
-            await asyncio.gather(
-                *self.create_service_pool()
-            )
+            try:
+                await asyncio.gather(
+                    *self.create_service_pool()
+                )
+            except CommandException as exc:
+                raise WatchdogException(exc)
 
             await asyncio.sleep(
-                self.context.numofseccheck
+                self.context.num_of_sec_check
             )
