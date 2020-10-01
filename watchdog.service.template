@@ -1,0 +1,18 @@
+[Unit]
+Description=Watchdog for Linux services.
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=60
+Environment="AWS_REGION={AWS_REGION}"
+Environment="AWS_ACCOUNT_ID={AWS_ACCOUNT_ID}"
+Environment="AWS_ACCESS_KEY_ID={AWS_ACCESS_KEY_ID}"
+Environment="AWS_SECRET_ACCESS_KEY={AWS_SECRET_ACCESS_KEY}"
+Environment="AWS_WATCHDOG_TABLE={AWS_WATCHDOG_TABLE}"
+Environment="AWS_WATCHDOG_SNS_TOPIC={AWS_WATCHDOG_SNS_TOPIC}"
+Environment="PYTHONPATH={module}"
+ExecStart={python} -m watchdog -i {id}
+
+[Install]
+WantedBy=multi-user.target

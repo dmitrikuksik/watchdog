@@ -12,7 +12,7 @@ from watchdog.core.watchdog import (
 )
 
 logging.basicConfig(
-    filename='./logs/watchdog.log',
+    filename='/var/log/watchdog.log',
     filemode='a',
     level=logging.INFO,
     format='[%(asctime)s, %(levelname)s/%(module)s] %(message)s',
