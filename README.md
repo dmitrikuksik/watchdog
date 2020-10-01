@@ -1,6 +1,9 @@
 # Linux Service Watchdog
 
-Nordcloud Recruitment Assignment.
+Simple watchdog, that checks if Linux services are alive. 
+Features: 
+* Load watchdog settings from AWS DynamoDB
+* Publish notifications to AWS SNS
 
 # Requirements
 * Linux
