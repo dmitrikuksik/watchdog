@@ -3,20 +3,14 @@ import sys
 import asyncio
 import logging
 
+from typing import Optional
+
 from watchdog.core.connectors import (
     AwsConnectorContext, DynamoDbConnector,
     DynamoDbException, SnsConnector,
 )
 from watchdog.core.watchdog import (
     Watchdog, WatchdogContext, WatchdogException
-)
-
-logging.basicConfig(
-    filename='/var/log/watchdog.log',
-    filemode='a',
-    level=logging.INFO,
-    format='[%(asctime)s, %(levelname)s/%(module)s] %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
 )
 
 logger = logging.getLogger(__name__)
@@ -110,7 +104,27 @@ class Application:
         )
 
 
-def run_app(watchdog_settings_id: str):
+def setup_logging(logfile: Optional[str] = None):
+    handlers = [logging.StreamHandler()]
+    if logfile:
+        handlers = [
+            logging.FileHandler(
+                filename=logfile,
+                mode='a',
+            )
+        ]
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(asctime)s, %(levelname)s/%(module)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=handlers
+    )
+
+
+def run_app(
+    watchdog_settings_id: str,
+    logfile: Optional[str] = None
+):
     print(
         '############################################################\n'
         '##                                                        ##\n'
@@ -125,6 +139,8 @@ def run_app(watchdog_settings_id: str):
         f'\t SNS topic: {AWS_WATCHDOG_SNS_TOPIC}\n'
         f'\t Watchdog settings id: {watchdog_settings_id}\n'
     )
+
+    setup_logging(logfile=logfile)
 
     if sys.platform != LINUX:
         logger.error(
