@@ -34,7 +34,13 @@ export AWS_WATCHDOG_TABLE=<your-watchdog-table-name>
 export AWS_WATCHDOG_SNS_TOPIC=<your-watchdog-sns-topic>
 ```
 
-5. Run Watchdog:
+5. Run tests:
+```bash
+python -m unittest discover tests
+```
+
+
+6. Run Watchdog:
 ```bash
 python -m watchdog -i <watchdog-settings-id>
 ```

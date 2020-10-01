@@ -26,10 +26,6 @@ class WatchdogContext:
         num_of_sec_wait: int,
         num_of_attempts: int
     ):
-        self.services = [
-            Service(s) for s in list_of_services
-        ]
-
         if (
             num_of_sec_check < 0 or
             num_of_sec_wait < 0 or
@@ -40,6 +36,9 @@ class WatchdogContext:
                 'Values can\'t be negative.'
             )
 
+        self.services = [
+            Service(s) for s in list_of_services
+        ]
         self.num_of_sec_check = num_of_sec_check
         self.num_of_sec_wait = num_of_sec_wait
         self.num_of_attempts = num_of_attempts
@@ -48,16 +47,16 @@ class WatchdogContext:
     def from_dict(cls, data: Dict) -> 'WatchdogContext':
         return cls(
             list_of_services=data.get(
-                'ListOfServices'
+                'ListOfServices', []
             ),
             num_of_sec_check=int(
-                data.get('NumOfSecCheck')
+                data.get('NumOfSecCheck', 0)
             ),
             num_of_sec_wait=int(
-                data.get('NumOfSecWait')
+                data.get('NumOfSecWait', 0)
             ),
             num_of_attempts=int(
-                data.get('NumOfAttempts')
+                data.get('NumOfAttempts', 0)
             )
         )
 
