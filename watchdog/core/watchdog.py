@@ -10,8 +10,6 @@ from watchdog.core.service import (
 
 logger = logging.getLogger(__name__)
 
-WATHDOG_RELOAD = 15*60
-
 
 class WatchdogException(Exception):
     pass
@@ -69,20 +67,19 @@ class Watchdog:
 
     def __init__(
         self,
-        sns_connector: SnsConnector,
-        reload_after: int = WATHDOG_RELOAD,
-        context: Optional[WatchdogContext] = None
+        context: Optional[WatchdogContext] = None,
+        sns_connector: Optional[SnsConnector] = None
     ):
-        self.sns_connector = sns_connector
-        self.reload_after = reload_after
         self.context = context
+        self.sns_connector = sns_connector
 
     def setup(self, context: WatchdogContext):
         self.context = context
 
     def propogate(self, msg):
         logger.info(msg)
-        self.sns_connector.publish(msg)
+        if self.sns_connector:
+            self.sns_connector.publish(msg)
 
     async def check(self, service: Service):
         logger.info(f'({service}): checking...')
@@ -124,7 +121,14 @@ class Watchdog:
             )
         return futures
 
-    async def watch(self):
+    async def watch(self, lifetime: Optional[int] = None):
+        """
+        Function starts checking watchdog services in loop
+
+        :param lifetime: optional, determines after what time
+        period exit the loop
+        """
+
         if not self.context:
             raise WatchdogException(
                 'Watchdog is not configured. Please, '
@@ -134,7 +138,7 @@ class Watchdog:
         tick = time.time()
         while True:
             tock = time.time() - tick
-            if tock >= self.reload_after:
+            if lifetime is not None and tock >= lifetime:
                 break
 
             try:

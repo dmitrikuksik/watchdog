@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 
 LINUX = 'linux'
 
+WATHDOG_LIFETIME = 15*60
+
 AWS_REGION = os.environ.get(
     'AWS_REGION', ''
 )
@@ -94,7 +96,9 @@ class Application:
                         settings
                     )
                 )
-                await self.watchdog.watch()
+                await self.watchdog.watch(
+                    lifetime=WATHDOG_LIFETIME
+                )
             except WatchdogException as exc:
                 logger.error(exc)
                 break
@@ -121,10 +125,7 @@ def setup_logging(logfile: Optional[str] = None):
     )
 
 
-def run_app(
-    watchdog_settings_id: str,
-    logfile: Optional[str] = None
-):
+def welcome(watchdog_settings_id: str):
     print(
         '############################################################\n'
         '##                                                        ##\n'
@@ -140,6 +141,12 @@ def run_app(
         f'\t Watchdog settings id: {watchdog_settings_id}\n'
     )
 
+
+def run_app(
+    watchdog_settings_id: str,
+    logfile: Optional[str] = None
+):
+    welcome(watchdog_settings_id)
     setup_logging(logfile=logfile)
 
     if sys.platform != LINUX:
@@ -188,24 +195,22 @@ def run_app(
     loop = asyncio.get_event_loop()
     try:
         aws_context = AwsConnectorContext(
-            AWS_REGION,
-            AWS_ACCOUNT_ID,
-            AWS_ACCESS_KEY_ID,
+            AWS_REGION, AWS_ACCOUNT_ID, AWS_ACCESS_KEY_ID,
             AWS_SECRET_ACCESS_KEY,
         )
         app = Application(
-            Watchdog(
-               SnsConnector(
-                   AWS_WATCHDOG_SNS_TOPIC,
-                   aws_context
+            watchdog=Watchdog(
+               sns_connector=SnsConnector(
+                   topic_name=AWS_WATCHDOG_SNS_TOPIC,
+                   context=aws_context
                )
             ),
-            DynamoDbConnector(
-                AWS_WATCHDOG_TABLE,
-                aws_context
+            db_connector=DynamoDbConnector(
+                table_name=AWS_WATCHDOG_TABLE,
+                context=aws_context
             ),
-            ApplicationContext(
-                watchdog_settings_id
+            context=ApplicationContext(
+                watchdog_settings_id=watchdog_settings_id
             )
         )
         loop.run_until_complete(app.start())
