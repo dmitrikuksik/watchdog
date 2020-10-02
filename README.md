@@ -7,7 +7,7 @@ Features:
 
 # Requirements
 * Linux
-* Python > 3.6.9
+* Python >= 3.6.9
 * virtualenv
 
 # Installation
