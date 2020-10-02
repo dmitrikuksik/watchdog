@@ -1,6 +1,6 @@
 import json
-import boto3
 import typing
+import boto3
 
 from botocore.exceptions import ClientError, ParamValidationError
 
@@ -65,7 +65,7 @@ class DynamoDbConnector:
             ParamValidationError,
             ClientError
         ) as err:
-            raise DynamoDbException(err)
+            raise DynamoDbException(err) from err
 
     def put_item(self, data: dict):
         self.table.put_item(

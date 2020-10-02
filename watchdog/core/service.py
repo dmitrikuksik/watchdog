@@ -24,7 +24,8 @@ class Command:
     def __call__(self, *args: str):
         return self.exec(*args)
 
-    def exec(self, *args) -> int:
+    @classmethod
+    def exec(cls, *args) -> int:
         try:
             with open(os.devnull, 'wb') as out:
                 code = subprocess.call(
@@ -37,7 +38,7 @@ class Command:
                     ' '.join(args),
                     err
                 )
-            )
+            ) from err
 
 
 class Service:

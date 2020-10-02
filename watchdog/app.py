@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 LINUX = 'linux'
 
-WATHDOG_LIFETIME = 15*60
+WATCHDOG_LIFETIME = 15*60
 
 AWS_REGION = os.environ.get(
     'AWS_REGION', ''
@@ -97,7 +97,7 @@ class Application:
                     )
                 )
                 await self.watchdog.watch(
-                    lifetime=WATHDOG_LIFETIME
+                    lifetime=WATCHDOG_LIFETIME
                 )
             except WatchdogException as exc:
                 logger.error(exc)
@@ -158,7 +158,7 @@ def run_app(
 
     if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
         logger.error(
-            'AWS credentials wasn\'t found. '
+            'AWS credentials were not found. '
             'Export AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY '
             'to run watchdog.'
         )

@@ -76,29 +76,39 @@ class Watchdog:
     def setup(self, context: WatchdogContext):
         self.context = context
 
-    def propogate(self, msg):
+    def propagate(self, msg):
         logger.info(msg)
         if self.sns_connector:
             self.sns_connector.publish(msg)
 
     async def check(self, service: Service):
-        logger.info(f'({service}): checking...')
+        logger.info(
+            '({}): checking...'.format(service)
+        )
 
         if service.ping():
-            logger.info(f'({service}): service is up')
+            logger.info(
+                '({}): service is up'.format(service)
+            )
             return
 
-        self.propogate(f'({service}): service is down')
+        self.propagate(
+            '({}): service is down'.format(service)
+        )
 
         for i in range(self.context.num_of_attempts):
             logger.info(
-                f'({service}): attempt to start service ({i+1})'
+                '({}): attempt to start service ({})'.format(
+                    service, i+1
+                )
             )
 
             service.start()
             if service.ping():
-                self.propogate(
-                    f'({service}): service is up after {i+1} attempt(s)'
+                self.propagate(
+                    '({}): service is up after {} attempt(s)'.format(
+                        service, i+1
+                    )
                 )
                 return
 
@@ -106,9 +116,10 @@ class Watchdog:
                 self.context.num_of_sec_wait
             )
 
-        self.propogate(
-            f'({service}): failed to start after '
-            f'{self.context.num_of_attempts} attempt(s)'
+        self.propagate(
+            '({}): failed to start after {} attempt(s)'.format(
+                service, self.context.num_of_attempts
+            )
         )
 
     def create_service_pool(self):
@@ -146,7 +157,7 @@ class Watchdog:
                     *self.create_service_pool()
                 )
             except CommandException as exc:
-                raise WatchdogException(exc)
+                raise WatchdogException(exc) from exc
 
             await asyncio.sleep(
                 self.context.num_of_sec_check
