@@ -57,7 +57,7 @@ chmod +x install.bash
 
 2. Install service (run sudo -E if needed):
 ```bash
-./install <watchdog-settings-id>
+./install.bash <watchdog-settings-id>
 ```
 
 3. Run service:
